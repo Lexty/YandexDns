@@ -81,6 +81,104 @@ class DnsClient extends AbstractServiceClient
     }
 
     /**
+     * @param string $content
+     * @param string|null $subdomain
+     * @param integer|null $ttl
+     * @return bool
+     */
+    public function addARecord($content, $subdomain = null, $ttl = null)
+    {
+        return $this->addRecord('a', $content, $subdomain, $ttl);
+    }
+
+    /**
+     * @param string $content
+     * @param string|null $subdomain
+     * @param integer|null $ttl
+     * @return bool
+     */
+    public function addAaaaRecord($content, $subdomain = null, $ttl = null)
+    {
+        return $this->addRecord('aaaa', $content, $subdomain, $ttl);
+    }
+
+    /**
+     * @param string $content
+     * @param string|null $subdomain
+     * @param integer|null $ttl
+     * @return bool
+     */
+    public function addCnameRecord($content, $subdomain = null, $ttl = null)
+    {
+        return $this->addRecord('cname', $content, $subdomain, $ttl);
+    }
+
+    /**
+     * @param string $content
+     * @param string|null $subdomain
+     * @param integer|null $ttl
+     * @param integer|null $priority
+     * @return bool
+     */
+    public function addMxRecord($content, $subdomain = null, $ttl = null, $priority = null)
+    {
+        return $this->addRecord('mx', $content, $subdomain, $ttl, array('priority' => $priority));
+    }
+
+    /**
+     * @param string $content
+     * @param string|null $subdomain
+     * @param integer|null $ttl
+     * @return bool
+     */
+    public function addNsRecord($content, $subdomain = null, $ttl = null)
+    {
+        return $this->addRecord('ns', $content, $subdomain, $ttl);
+    }
+
+    /**
+     * @param integer $weight
+     * @param integer $port
+     * @param string $target
+     * @param string|null $subdomain
+     * @param integer|null $ttl
+     * @param integer|null $priority
+     * @return bool
+     */
+    public function addSrvRecord($weight, $port, $target, $subdomain = null, $ttl = null, $priority = null)
+    {
+        return $this->addRecord('srv', null, $subdomain, $ttl, array(
+            'weight'   => $weight,
+            'port'     => $port,
+            'target'   => $target,
+            'priority' => $priority,
+        ));
+    }
+
+    /**
+     * @param string $content
+     * @param string|null $subdomain
+     * @param integer|null $ttl
+     * @return bool
+     */
+    public function addTxtRecord($content, $subdomain = null, $ttl = null)
+    {
+        return $this->addRecord('txt', $content, $subdomain, $ttl);
+    }
+
+    protected function addRecord($type, $content, $subdomain, $ttl, array $additional = array())
+    {
+        $method = 'add_' . $type . '_record';
+        $data = array_filter($additional);
+        if (null !== $content)   $data['content']   = $content;
+        if (null !== $subdomain) $data['subdomain'] = $subdomain;
+        if (null !== $ttl)       $data['ttl']       = $ttl;
+        $response = $this->sendRequest($method, $data);
+
+        return $response->isSuccess();
+    }
+
+    /**
      * @param string $method
      * @param array $data
      * @return Response

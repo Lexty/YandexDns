@@ -64,16 +64,18 @@ class Response
             $sxe = $this->stringToSimpleXMLElement($xml);
         }
 
-        $this->status = $sxe->domains->error;
+        $this->status = (string) $sxe->domains->error;
 
-        foreach ($sxe->domains->domain[0]->response->record as $record) {
-            $content = (string) $record;
-            $record = (array) $record;
-            $record = $record['@attributes'];
-            $record['content'] = $content;
-            $record['record_id'] = $record['id'];
-            unset($record['id']);
-            $this->data[] = $record;
+        if (null !== $sxe->domains->domain[0]->response->record) {
+            foreach ($sxe->domains->domain[0]->response->record as $record) {
+                $content = (string)$record;
+                $record = (array)$record;
+                $record = $record['@attributes'];
+                $record['content'] = $content;
+                $record['record_id'] = $record['id'];
+                unset($record['id']);
+                $this->data[] = $record;
+            }
         }
 
         return $this;
