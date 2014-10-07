@@ -23,6 +23,28 @@ use Yandex\Common\AbstractServiceClient;
  */
 class DnsClient extends AbstractServiceClient
 {
+    const TYPE_A     = 'a';
+    const TYPE_AAAA  = 'aaaa';
+    const TYPE_CNAME = 'cname';
+    const TYPE_MX    = 'mx';
+    const TYPE_NS    = 'ns';
+    const TYPE_SRV   = 'srv';
+    const TYPE_TXT   = 'txt';
+    const TYPE_SOA   = 'soa';
+
+    const FIELD_CONTENT        = 'content';
+    const FIELD_SUBDOMAIN      = 'subdomain';
+    const FIELD_TTL            = 'ttl';
+    const FIELD_PRIORITY       = 'priority';
+    const FIELD_SRV_WEIGHT     = 'weight';
+    const FIELD_SRV_PORT       = 'port';
+    const FIELD_SRV_TARGET     = 'target';
+    const FIELD_SOA_ADMIN_MAIL = 'admin_mail';
+    const FIELD_SOA_REFRESH    = 'refresh';
+    const FIELD_SOA_RETRY      = 'retry';
+    const FIELD_SOA_EXPIRE     = 'expire';
+    const FIELD_SOA_NEG_CACHE  = 'neg_cache';
+
     /**
      * API domain
      *
@@ -80,63 +102,31 @@ class DnsClient extends AbstractServiceClient
         return $response->getData();
     }
 
+    public function addRecord($type, array $data)
+    {
+        $response = $this->manageRecord('add', $type, $data);
+
+        return $response->isSuccess();
+    }
+
     /**
+     * @param integer $recordId
      * @param string $content
      * @param string|null $subdomain
      * @param integer|null $ttl
      * @return bool
      */
-    public function addARecord($content, $subdomain = null, $ttl = null)
+    public function editARecordById($recordId, $content, $subdomain, $ttl)
     {
-        return $this->addRecord('a', $content, $subdomain, $ttl);
+        return $this->editRecordByTypeAndId(self::TYPE_A, $recordId, array(
+            self::FIELD_CONTENT   => $content,
+            self::FIELD_SUBDOMAIN => $subdomain,
+            self::FIELD_TTL       => $ttl,
+        ));
     }
 
     /**
-     * @param string $content
-     * @param string|null $subdomain
-     * @param integer|null $ttl
-     * @return bool
-     */
-    public function addAaaaRecord($content, $subdomain = null, $ttl = null)
-    {
-        return $this->addRecord('aaaa', $content, $subdomain, $ttl);
-    }
-
-    /**
-     * @param string $content
-     * @param string|null $subdomain
-     * @param integer|null $ttl
-     * @return bool
-     */
-    public function addCnameRecord($content, $subdomain = null, $ttl = null)
-    {
-        return $this->addRecord('cname', $content, $subdomain, $ttl);
-    }
-
-    /**
-     * @param string $content
-     * @param string|null $subdomain
-     * @param integer|null $ttl
-     * @param integer|null $priority
-     * @return bool
-     */
-    public function addMxRecord($content, $subdomain = null, $ttl = null, $priority = null)
-    {
-        return $this->addRecord('mx', $content, $subdomain, $ttl, array('priority' => $priority));
-    }
-
-    /**
-     * @param string $content
-     * @param string|null $subdomain
-     * @param integer|null $ttl
-     * @return bool
-     */
-    public function addNsRecord($content, $subdomain = null, $ttl = null)
-    {
-        return $this->addRecord('ns', $content, $subdomain, $ttl);
-    }
-
-    /**
+     * @param integer $recordId
      * @param integer $weight
      * @param integer $port
      * @param string $target
@@ -145,37 +135,61 @@ class DnsClient extends AbstractServiceClient
      * @param integer|null $priority
      * @return bool
      */
-    public function addSrvRecord($weight, $port, $target, $subdomain = null, $ttl = null, $priority = null)
+    public function editSrvRecordById($recordId, $weight, $port, $target, $subdomain = null, $ttl = null, $priority = null)
     {
-        return $this->addRecord('srv', null, $subdomain, $ttl, array(
-            'weight'   => $weight,
-            'port'     => $port,
-            'target'   => $target,
-            'priority' => $priority,
+        return $this->editRecordByTypeAndId(self::TYPE_SRV, $recordId, array(
+            self::FIELD_SRV_WEIGHT => $weight,
+            self::FIELD_SRV_PORT   => $port,
+            self::FIELD_SRV_TARGET => $target,
+            self::FIELD_SUBDOMAIN  => $subdomain,
+            self::FIELD_TTL        => $ttl,
+            self::FIELD_PRIORITY   => $priority,
         ));
     }
 
     /**
-     * @param string $content
-     * @param string|null $subdomain
-     * @param integer|null $ttl
+     * @param integer $recordId
+     * @param string $adminMail
+     * @param integer $refresh
+     * @param integer $retry
+     * @param integer $expire
+     * @param integer $negChache
+     * @param null|integer $ttl
      * @return bool
      */
-    public function addTxtRecord($content, $subdomain = null, $ttl = null)
+    public function editSoaRecordById($recordId, $adminMail, $refresh, $retry, $expire, $negChache, $ttl = null)
     {
-        return $this->addRecord('txt', $content, $subdomain, $ttl);
+        return $this->editRecordByTypeAndId(self::TYPE_SOA, $recordId, array(
+            self::FIELD_SOA_ADMIN_MAIL => $adminMail,
+            self::FIELD_SOA_REFRESH    => $refresh,
+            self::FIELD_SOA_RETRY      => $retry,
+            self::FIELD_SOA_EXPIRE     => $expire,
+            self::FIELD_SOA_NEG_CACHE  => $negChache,
+            self::FIELD_TTL            => $ttl,
+        ));
     }
 
-    protected function addRecord($type, $content, $subdomain, $ttl, array $additional = array())
+    public function editRecordByTypeAndId($type, $recordId, array $data)
     {
-        $method = 'add_' . $type . '_record';
-        $data = array_filter($additional);
-        if (null !== $content)   $data['content']   = $content;
-        if (null !== $subdomain) $data['subdomain'] = $subdomain;
-        if (null !== $ttl)       $data['ttl']       = $ttl;
+        $data['record_id'] = $recordId;
+        $response = $this->manageRecord('edit', $type, $data);
+
+        return $response;
+    }
+
+    protected function manageRecord($action, $type, array $data)
+    {
+        $method = $action . '_' . strtolower($type) . '_record';
         $response = $this->sendRequest($method, $data);
 
-        return $response->isSuccess();
+        return $response;
+    }
+
+    public function deleteRecordById($recordId)
+    {
+        $response = $this->sendRequest('delete_record', array('record_id' => $recordId));
+
+        return $response;
     }
 
     /**
