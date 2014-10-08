@@ -89,8 +89,10 @@ class Response
     protected function stringToSimpleXMLElement($xml)
     {
         libxml_use_internal_errors(true);
-        if (libxml_get_errors())
+        $sxe = simplexml_load_string($xml);
+        if (libxml_get_errors()) {
             throw new \Exception('Bad response');
-        return simplexml_load_string($xml);
+        }
+        return $sxe;
     }
 }
