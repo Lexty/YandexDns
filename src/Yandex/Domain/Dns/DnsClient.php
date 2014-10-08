@@ -44,6 +44,8 @@ class DnsClient extends AbstractServiceClient
     const FIELD_SOA_RETRY      = 'retry';
     const FIELD_SOA_EXPIRE     = 'expire';
     const FIELD_SOA_NEG_CACHE  = 'neg_cache';
+    const FIELD_RECORD_ID      = 'record_id';
+    const FIELD_RECORD_TYPE    = 'type';
 
     /**
      * API domain
@@ -99,9 +101,17 @@ class DnsClient extends AbstractServiceClient
     {
         $response = $this->sendRequest('get_domain_records');
 
-        return $response->getData();
+        if ($response->isSuccess())
+            return $response->getData();
+        else
+            return false;
     }
 
+    /**
+     * @param string $type
+     * @param array $data
+     * @return bool
+     */
     public function addRecord($type, array $data)
     {
         $response = $this->manageRecord('add', $type, $data);
@@ -169,12 +179,18 @@ class DnsClient extends AbstractServiceClient
         ));
     }
 
+    /**
+     * @param string $type
+     * @param integer $recordId
+     * @param array $data
+     * @return bool
+     */
     public function editRecordByTypeAndId($type, $recordId, array $data)
     {
-        $data['record_id'] = $recordId;
+        $data[self::FIELD_RECORD_ID] = $recordId;
         $response = $this->manageRecord('edit', $type, $data);
 
-        return $response;
+        return $response->isSuccess();
     }
 
     protected function manageRecord($action, $type, array $data)
@@ -185,11 +201,95 @@ class DnsClient extends AbstractServiceClient
         return $response;
     }
 
+    /**
+     * @param integer $recordId
+     * @return bool
+     */
     public function deleteRecordById($recordId)
     {
-        $response = $this->sendRequest('delete_record', array('record_id' => $recordId));
+        $response = $this->sendRequest('delete_record', array(self::FIELD_RECORD_ID => $recordId));
 
-        return $response;
+        return $response->isSuccess();
+    }
+
+    /**
+     * @param array $cond
+     * @param callback|null $callback
+     * @return int
+     */
+    public function matchRecords(array $cond, $callback = null)
+    {
+        if (empty($cond)) return 0;
+        if (!$records = $this->getDomainRecords()) return 0;
+        $match = 0;
+
+        foreach ($records as $record) {
+            if ($this->match($record, $cond)) {
+                if (null === $callback)
+                    ++$match;
+                elseif (is_callable($callback) && $callback($record))
+                    ++$match;
+            }
+        }
+        return $match;
+    }
+
+    /**
+     * @param array $cond
+     * @param array $data
+     * @return int
+     */
+    public function editRecords(array $cond, array $data)
+    {
+        /** @TODO Rewrite to php 5.4 */
+        $dns = $this;
+        $result = $this->matchRecords(
+            $cond,
+            function($record) use ($data, $dns) {
+                return $dns->editRecordByTypeAndId(
+                    $record[DnsClient::FIELD_RECORD_TYPE],
+                    $record[DnsClient::FIELD_RECORD_ID],
+                    array_merge($record, $data)
+                );
+            }
+        );
+
+        return $result;
+    }
+
+    /**
+     * @param array $cond
+     * @return int
+     */
+    public function deleteRecords(array $cond)
+    {
+        /** @TODO Rewrite to php 5.4 */
+        $dns = $this;
+        $result = $this->matchRecords(
+            $cond,
+            function($record) use ($dns) {
+                return $dns->deleteRecordById($record[DnsClient::FIELD_RECORD_ID]);
+            }
+        );
+
+        return $result;
+    }
+
+    protected function match(array $record, array $cond)
+    {
+        return 0 === count(
+            array_udiff_uassoc(
+                $cond,
+                array_uintersect_uassoc(
+                    $record,
+                    $cond,
+                    'strcasecmp',
+                    'strcasecmp'
+                ),
+                'strcasecmp',
+                'strcasecmp'
+            )
+        );
     }
 
     /**
