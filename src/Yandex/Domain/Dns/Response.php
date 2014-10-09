@@ -73,14 +73,17 @@ class Response
      * @param string|\SimpleXMLElement $xml
      * @return self $this
      * @throws YandexException
+     * @throws \InvalidArgumentException
      * @codeCoverageIgnore
      */
     protected function parseResponse($xml)
     {
         if (is_object($xml) && is_a($xml, '\SimpleXMLElement')) {
             $sxe = $xml;
-        } else {
+        } else if (is_string($xml)) {
             $sxe = $this->stringToSimpleXML($xml);
+        } else {
+            throw new YandexException('Bad response');
         }
 
         /** @TODO Rewrite to php 5.5 */

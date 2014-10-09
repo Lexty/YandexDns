@@ -60,6 +60,11 @@ class DnsClient extends AbstractServiceClient
     protected $domainName = '';
 
     /**
+     * @var null|Request
+     */
+    protected $request = null;
+
+    /**
      * @param string $domainName Domain name
      * @param string $token access token
      */
@@ -67,6 +72,27 @@ class DnsClient extends AbstractServiceClient
     {
         $this->setDomainName($domainName);
         $this->setAccessToken($token);
+    }
+
+    /**
+     * Inject Request dependency
+     *
+     * @param Request $request
+     * @return self
+     */
+    public function setRequest(Request $request)
+    {
+        $this->request = $request;
+
+        return $this;
+    }
+
+    protected function getRequest()
+    {
+        if (is_null($this->request))
+            $this->setRequest(new Request());
+
+        return $this->request;
     }
 
     /**
@@ -95,16 +121,16 @@ class DnsClient extends AbstractServiceClient
     }
 
     /**
-     * @return Response
+     * @return array|string
      */
     public function getDomainRecords()
     {
-        $response = $this->sendRequest('get_domain_records');
+        $response = $this->send('get_domain_records');
 
         if ($response->isSuccess())
             return $response->getData();
         else
-            return false;
+            return $response->getStatus();
     }
 
     /**
@@ -196,7 +222,7 @@ class DnsClient extends AbstractServiceClient
     protected function manageRecord($action, $type, array $data)
     {
         $method = $action . '_' . strtolower($type) . '_record';
-        $response = $this->sendRequest($method, $data);
+        $response = $this->send($method, $data);
 
         return $response;
     }
@@ -207,17 +233,17 @@ class DnsClient extends AbstractServiceClient
      */
     public function deleteRecordById($recordId)
     {
-        $response = $this->sendRequest('delete_record', array(self::FIELD_RECORD_ID => $recordId));
+        $response = $this->send('delete_record', array(self::FIELD_RECORD_ID => $recordId));
 
         return $response->isSuccess();
     }
 
     /**
      * @param array $cond
-     * @param callback|null $callback
+     * @param \Closure|null $callback
      * @return int
      */
-    public function matchRecords(array $cond, $callback = null)
+    public function matchRecords(array $cond, \Closure $callback = null)
     {
         if (empty($cond)) return 0;
         if (!$records = $this->getDomainRecords()) return 0;
@@ -297,14 +323,13 @@ class DnsClient extends AbstractServiceClient
      * @param array $data
      * @return Response
      */
-    protected function sendRequest($method, array $data = array())
+    protected function send($method, array $data = array())
     {
         $data = array_merge($data, array(
             'token'  => $this->getAccessToken(),
             'domain' => $this->getDomainName()
         ));
-        $request = new Request();
-        $response = $request->send($this->getServiceUrl(), $method, $data);
+        $response = $this->getRequest()->send($this->getServiceUrl(), $method, $data);
 
         return $response;
     }

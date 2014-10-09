@@ -4,7 +4,7 @@ namespace Yandex\Tests\Domain\Dns;
 
 use Yandex\Tests\TestCase;
 use Yandex\Domain\Dns\Response;
-use Yandex\Tests\Domain\Dns\Fixtures\Responses;
+use Yandex\Tests\Domain\Dns\Fixtures\IncomingData;
 
 class ResponseTest extends TestCase
 {
@@ -29,7 +29,7 @@ class ResponseTest extends TestCase
 
     public function correctResponseProvider()
     {
-        $fixtures = Responses::responsesFixtures();
+        $fixtures = IncomingData::responsesFixtures();
         $expectData = array(array(
             'domain' => 'yourdomain.ru',
             'priority' => '',
@@ -62,10 +62,11 @@ class ResponseTest extends TestCase
 
     public function incorrectResponseProvider()
     {
-        $fixtures = Responses::responsesFixtures();
+        $fixtures = IncomingData::responsesFixtures();
         return array(
             array($fixtures['anotherStructure']),
             array($fixtures['invalidXml']),
+            array(new \StdClass()),
         );
     }
 }

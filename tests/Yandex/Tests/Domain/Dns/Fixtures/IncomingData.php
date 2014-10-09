@@ -2,7 +2,7 @@
 
 namespace Yandex\Tests\Domain\Dns\Fixtures;
 
-class Responses
+class IncomingData
 {
     public static function responsesFixtures()
     {
@@ -17,6 +17,8 @@ class Responses
 <page><domain><domain><name>example.com</name><response><record domain="yourdomain.ru" priority="" ttl="21600" subdomain="www" type="A" id="342432432">127.0.0.1</record></response><nsdelegated/></domain><error>ok</error></domain></page>',
             'invalidXml' => '<?xml version="1.0" encoding="utf-8"?>
 <page><domains><domain><name>example.com</name><response><record domain="yourdomain.ru" priority="" ttl="21600" subdomain="www" type="A" id="342432432">127.0.0.1</record></response><nsdelegated/></domain><success>ok</success></domains>',
+            'badTokenResponse' => '<?xml version="1.0" encoding="utf-8"?>
+<page><domains><domain/><error>bad_token</error></domains></page>',
         );
     }
 }
