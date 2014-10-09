@@ -85,7 +85,7 @@ class TestListener implements \PHPUnit_Framework_TestListener
         $this->timeTest = microtime(1);
         $method = $this->colorize($test->getName(), 'green');
 
-        echo "\n\t-> " . $method;
+        echo "\t-> " . $method;
     }
 
     /**
@@ -108,7 +108,7 @@ class TestListener implements \PHPUnit_Framework_TestListener
     public function startTestSuite(\PHPUnit_Framework_TestSuite $suite)
     {
         $this->timeSuite = microtime(1);
-        echo "\n\n".$this->colorize($suite->getName(), 'blue');
+        echo "\n".$this->colorize($suite->getName(), 'blue');
     }
 
     /**
@@ -119,7 +119,7 @@ class TestListener implements \PHPUnit_Framework_TestListener
     {
         $time = sprintf('%0.3f sec', microtime(1) - $this->timeSuite);
 
-        echo $this->colorize("\nTime: ".$time, 'green');
+        echo $this->colorize("Time: ".$time, 'green');
     }
 
     /**
